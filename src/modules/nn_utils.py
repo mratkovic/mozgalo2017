@@ -7,6 +7,8 @@ import tensorflow as tf
 from tensorflow.python.platform import gfile
 from tqdm import tqdm
 
+from .utils import load_image
+
 
 def _create_graph(model_path):
     with gfile.FastGFile(model_path, 'rb') as f:
@@ -30,9 +32,10 @@ class InceptionNet:
     def create_graph(self):
         _create_graph(self.def_file_path)
 
+
     @staticmethod
-    def _load_as_jpeg(path):
-        img = cv2.imread(path)
+    def _load_as_jpeg_bytes(path):
+        img = load_image(path)
         tmp_path = './tmp.jpg'
         cv2.imwrite(tmp_path, img)  # store as jpg
         image_data = gfile.FastGFile(tmp_path, 'rb').read()
@@ -68,7 +71,7 @@ class InceptionNet:
                     logging.warning('File does not exist %s', image)
                     continue
 
-                feed_dict = {self.input_placeholder_name: self._load_as_jpeg(image)}
+                feed_dict = {self.input_placeholder_name: self._load_as_jpeg_bytes(image)}
                 predictions = sess.run(endpoint, feed_dict)
 
                 vals.append(np.squeeze(predictions))

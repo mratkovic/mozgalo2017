@@ -1,12 +1,14 @@
 import os
-import cv2
+import skimage
+import skimage.io
 import glob
-from tqdm import  tqdm
+from tqdm import tqdm
 
 import numpy as np
 import pandas as pd
 import logging
 
+from .utils import load_image
 
 class ImageDataset:
     def __init__(self, root_dir):
@@ -35,22 +37,36 @@ class ImageDataset:
         self.imgs = np.array([self.get_img(i) for i in tqdm(range(self.size))])
 
     def get_img(self, index):
-        return cv2.imread(self.paths[index])
+        return load_image(self.paths[index])
 
     def extract_features(self, model):
         self.features = model.extract_features(self.paths)
 
-    def store_features(self, csv_path):
+    def _features_to_df(self):
         df = pd.DataFrame(self.features)
         names = [os.path.basename(p) for p in self.paths]
         df.insert(0, 'name', names)
         df.set_index('name', inplace=True)
 
-        df.to_csv(csv_path)
+        return df
 
-    def load_features(self, csv_path):
-        df = pd.read_csv(csv_path)
+    def _features_from_df(self, df):
         df.set_index('name', inplace=True)
 
         self.features = df.as_matrix()
         self.paths = [os.path.join(self.root_dir, p) for p in df.index.values]
+
+    def store_csv_features(self, csv_path):
+        df = self._features_to_df()
+        df.to_csv(csv_path)
+
+    def load_csv_features(self, csv_path):
+        self._features_from_df(pd.read_csv(csv_path))
+
+    def store_features(self, path):
+        df = self._features_to_df()
+        df.to_pickle(path)
+
+    def load_features(self, path):
+        self._features_from_df(pd.read_pickle(path))
+
