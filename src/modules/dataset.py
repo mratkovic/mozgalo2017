@@ -51,8 +51,6 @@ class ImageDataset:
         return df
 
     def _features_from_df(self, df):
-        df.set_index('name', inplace=True)
-
         self.features = df.as_matrix()
         self.paths = [os.path.join(self.root_dir, p) for p in df.index.values]
 
