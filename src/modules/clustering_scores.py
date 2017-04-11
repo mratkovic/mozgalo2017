@@ -1,58 +1,13 @@
 from __future__ import division
+from operator import itemgetter
 from collections import defaultdict
 from math import sqrt, log, pow
+
 from scipy.spatial.distance import cdist, pdist, cosine
 from sklearn.utils import check_random_state
+from sklearn.metrics  import silhouette_score, calinski_harabaz_score
 
 import numpy as np
-
-def calinski_harabaz_index(X, labels):
-    """
-    Compute the Calinski and Harabaz (1974). It a ratio between the
-    within-cluster dispersion and the between-cluster dispersion
-
-    CH(k) = trace(B_k) / (k -1) * (n - k) / trace(W_k)
-
-    With B_k the between group dispersion matrix, W_k the within-cluster
-    dispersion matrix
-
-    B_k = \sum_q n_q (c_q - c) (c_q -c)^T
-    W_k = \sum_q \sum_{x \in C_q} (x - c_q) (x - c_q)^T
-
-    Ref: R.B.Calinsky, J.Harabasz: A dendrite method for cluster analysis 1974
-
-    Parameter
-    ---------
-    X: numpy array of size (nb_data, nb_feature)
-    labels: list of int of length nb_data: labels[i] is the cluster
-        assigned to X[i, :]
-
-    Return
-    ------
-    res: float: mean silhouette of this clustering
-    """
-    assi = defaultdict(list)
-    for i, l in enumerate(labels):
-        assi[l].append(i)
-
-    nb_data, nb_feature = X.shape
-    disp_intra = np.zeros((nb_feature, nb_feature))
-    disp_extra = np.zeros((nb_feature, nb_feature))
-    center = np.mean(X, axis=0)
-
-    for points in assi.values():
-        clu_points = X[points, :]
-        # unbiaised estimate of variace is \sum (x - mean_x)^2 / (n - 1)
-        # so, if I want sum of dispersion, I need
-        # W_k = cov(X) * (n - 1)
-        nb_point = clu_points.shape[0]
-        disp_intra += np.cov(clu_points, rowvar=0) * (nb_point - 1)
-        extra_var = (np.mean(clu_points, axis=0) - center).reshape(
-            (nb_feature, 1))
-        disp_extra += np.multiply(extra_var, extra_var.transpose()) * nb_point
-    return (disp_extra.trace() * (nb_data - len(assi)) /
-            (disp_intra.trace() * (len(assi) - 1)))
-
 
 def calc_calinski_harabaz(X, cluster_estimator, n_clusters):
     """
@@ -68,7 +23,7 @@ def calc_calinski_harabaz(X, cluster_estimator, n_clusters):
 
     """
     cluster_estimator.set_params(n_clusters=n_clusters)
-    return calinski_harabaz_index(X, cluster_estimator.fit_predict(X))
+    return calinski_harabaz_score(X, cluster_estimator.fit_predict(X))
 
 
 def max_CH_index(X, cluster_estimator, k_max=None):
@@ -95,8 +50,8 @@ def max_CH_index(X, cluster_estimator, k_max=None):
     if not k_max:
         k_max = X.shape[0] // 2
 
-    return max((k for k in range(2, k_max + 1)),
-               key=lambda k: calc_calinski_harabaz(X, cluster_estimator, k))
+    ch_idex_list = [(k, calc_calinski_harabaz(X, cluster_estimator, k)) for k in range(2, k_max + 1)]
+    return max(ch_idex_list, key=itemgetter(1))[0], np.array(ch_idex_list)
 
 
 def distortion(X, labels, distortion_meth='sqeuclidean', p=2):
@@ -215,18 +170,18 @@ def distortion_jump(X, cluster_estimator, k_max=None,
 
     Y = - nb_feature / 2
     info_gain = 0
-    old_dist = pow(
-        distortion(X, np.zeros(nb_data), distortion_meth, p) / nb_feature, Y)
+    old_dist = pow(distortion(X, np.zeros(nb_data), distortion_meth, p) / nb_feature, Y)
+    distortion_scores = []
     for k in range(2, k_max + 1):
         cluster_estimator.set_params(n_clusters=k)
         labs = cluster_estimator.fit_predict(X)
-        new_dist = pow(
-            distortion(X, labs, distortion_meth, p) / nb_feature, Y)
+        new_dist = pow(distortion(X, labs, distortion_meth, p) / nb_feature, Y)
         if new_dist - old_dist >= info_gain:
             k_star = k
             info_gain = new_dist - old_dist
         old_dist = new_dist
-    return k_star
+        distortion_scores.append((k,old_dist)) 
+    return k_star, np.array(distortion_scores)
 
 
 def fowlkes_mallows_index(clustering_1, clustering_2):
@@ -331,11 +286,10 @@ def stability(X, cluster_estimator, k_max=None, nb_draw=100, prop_subset=.8,
         k_max = n_samples // 2
 
     best_stab, best_k = 0, 0
+    stability_score = []
     for k in range(2, k_max + 1):
         cluster_estimator.set_params(n_clusters=k)
-        this_score = sum(
-            _one_stability_measure(cluster_estimator, X, prop_subset,
-                                   cluster_similarity)
+        this_score = sum(_one_stability_measure(cluster_estimator, X, prop_subset, cluster_similarity)
             for _ in range(nb_draw)) / nb_draw
         if verbose:
             print('for %d cluster, stability is %f' % (k, this_score))
@@ -343,8 +297,8 @@ def stability(X, cluster_estimator, k_max=None, nb_draw=100, prop_subset=.8,
         if this_score >= best_stab:
             best_stab = this_score
             best_k = k
-
-    return best_k
+        stability_score.append((k,this_score))
+    return best_k, np.array(stability_score)
 
 
 def _one_stability_measure(cluster_estimator, X, prop_sample,
@@ -512,9 +466,7 @@ def normal_inertia(X, cluster_estimator, nb_draw=100,
     dist = []
     for i in range(nb_draw):
         X_rand = rng.multivariate_normal(mu, sigma, size=nb_data)
-        dist.append(inertia(
-            X_rand, cluster_estimator.fit_predict(X_rand),
-            metric, p))
+        dist.append(inertia(X_rand, cluster_estimator.fit_predict(X_rand), metric, p))
 
     return dist
 
@@ -627,6 +579,8 @@ def gap_statistic(X, cluster_estimator, k_max=None, nb_draw=100,
         sigma = np.cov(X.transpose())
 
     old_gap = - float("inf")
+    best_k = 0
+    gap_score = []
     for k in range(2, k_max + 2):
         cluster_estimator.set_params(n_clusters=k)
         real_dist = inertia(X, cluster_estimator.fit_predict(X),
@@ -648,12 +602,20 @@ def gap_statistic(X, cluster_estimator, k_max=None, nb_draw=100,
         std_dist = np.std(rand_dist)
         gap = exp_dist - log(real_dist)
         safety = std_dist * sqrt(1 + 1 / nb_draw)
-        if k > 2 and old_gap >= gap - safety:
-            return k - 1
+        
+        #if k > 2 and old_gap >= gap - safety:
+        #    return k - 1
+        
+        if k > 2 and old_gap >= gap - safety and best_k==0:
+            best_k = k - 1
         old_gap = gap
+        gap_score.append((k, old_gap))
     # if k was found, the function would have returned
     # no clusters were found -> only 1 cluster
-    return 1 
+    #return 1 
+    if best_k == 0:
+        best_k = 1
+    return best_k, np.array(gap_score)
 
 def max_silhouette(X, cluster_estimator, k_max=None):
     if not k_max:
@@ -663,4 +625,4 @@ def max_silhouette(X, cluster_estimator, k_max=None):
         cluster_estimator.set_params(n_clusters=k)
         labels = cluster_estimator.fit_predict(X)
         silhouettes.append((k, silhouette_score(X, labels)))
-    return max(silhouettes, key=itemgetter(1))[0]
+    return max(silhouettes, key=itemgetter(1))[0], np.array(silhouettes)
