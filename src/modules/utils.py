@@ -38,3 +38,5 @@ def load_image(path):
 
     return img
 
+def save_image(path, img):
+    cv2.imwrite(path, img)

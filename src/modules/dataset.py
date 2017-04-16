@@ -2,13 +2,14 @@ import os
 import skimage
 import skimage.io
 import glob
+import shutil
 from tqdm import tqdm
 
 import numpy as np
 import pandas as pd
 import logging
 
-from .utils import load_image
+from .utils import load_image, save_image
 
 class ImageDataset:
     def __init__(self, root_dir):
@@ -68,3 +69,12 @@ class ImageDataset:
     def load_features(self, path):
         self._features_from_df(pd.read_pickle(path))
 
+    def save_cluset_to_file(self, path, labels):
+        distinct_labels = np.unique(labels)
+        if os.path.exists(path):
+            shutil.rmtree(path)
+        for label in tqdm(distinct_labels):
+            indeces = np.where(labels == label)[0]
+            os.makedirs('%s/%d/' % (path, label), exist_ok=True)
+            for index in indeces:
+                save_image('%s/%d/%s' % (path, label, os.path.basename(self.paths[index])), self.imgs[index])
