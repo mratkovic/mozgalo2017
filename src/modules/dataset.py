@@ -69,7 +69,7 @@ class ImageDataset:
     def load_features(self, path):
         self._features_from_df(pd.read_pickle(path))
 
-    def save_cluset_to_file(self, path, labels):
+    def save_clusters_to_file(self, path, labels):
         distinct_labels = np.unique(labels)
         if os.path.exists(path):
             shutil.rmtree(path)
