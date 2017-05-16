@@ -28,6 +28,10 @@ class ImageDataset:
     def _discover_paths(self):
         self.paths = glob.glob(os.path.join(self.root_dir, '*'))
         self.paths = [os.path.realpath(p) for p in self.paths]
+        self.rebuild_path_index()
+       
+    def rebuild_path_index(self):
+        self.path_to_id = {os.path.basename(p):i for i, p in enumerate(self.paths)}
 
     @property
     def size(self):
@@ -54,6 +58,7 @@ class ImageDataset:
     def _features_from_df(self, df):
         self.features = df.as_matrix()
         self.paths = [os.path.join(self.root_dir, p) for p in df.index.values]
+        self.rebuild_path_index()
 
     def store_csv_features(self, csv_path):
         df = self._features_to_df()
