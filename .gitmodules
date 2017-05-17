@@ -1,0 +1,6 @@
+[submodule "src/modules/models"]
+	path = src/modules/models
+	url = https://github.com/tensorflow/models/
+[submodule "src/deep-learning-models"]
+	path = src/deep-learning-models
+	url = https://github.com/fchollet/deep-learning-models.git

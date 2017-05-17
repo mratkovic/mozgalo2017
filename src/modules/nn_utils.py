@@ -25,7 +25,6 @@ from .models.slim.preprocessing import inception_preprocessing
 from .models.slim.nets.inception_v4 import inception_v4_arg_scope, inception_v4
 
 
-
 def _create_graph(model_path):
     with gfile.FastGFile(model_path, 'rb') as f:
         graph_def = tf.GraphDef()
