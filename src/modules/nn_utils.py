@@ -19,7 +19,8 @@ from sklearn.decomposition import PCA
 from tqdm import tqdm
 import shutil
 import _pickle as cPickle
-
+import cv2
+from .utils import  load_image
 from .models.slim.preprocessing import inception_preprocessing
 from .models.slim.nets.inception_v4 import inception_v4_arg_scope, inception_v4
 
@@ -48,15 +49,15 @@ class InceptionNet:
         _create_graph(self.def_file_path)
 
 
-    # @staticmethod
-    # def _load_as_jpeg_bytes(path):
-    #     img = load_image(path)
-    #     tmp_path = './tmp.jpg'
-    #     cv2.imwrite(tmp_path, img)  # store as jpg
-    #     image_data = gfile.FastGFile(tmp_path, 'rb').read()
-    #     os.remove(tmp_path)  # remove tmp file
-    #
-    #     return image_data
+    @staticmethod
+    def _load_as_jpeg_bytes(path):
+        img = load_image(path)
+        tmp_path = './tmp.jpg'
+        cv2.imwrite(tmp_path, img)  # store as jpg
+        image_data = gfile.FastGFile(tmp_path, 'rb').read()
+        os.remove(tmp_path)  # remove tmp file
+
+        return image_data
 
     @staticmethod
     def _label_lookup():
