@@ -66,6 +66,7 @@ class ImageDataset:
 
     def load_csv_features(self, csv_path):
         self._features_from_df(pd.read_csv(csv_path))
+        self.load_imgs()
 
     def store_features(self, path):
         df = self._features_to_df()
@@ -73,6 +74,7 @@ class ImageDataset:
 
     def load_features(self, path):
         self._features_from_df(pd.read_pickle(path))
+        self.load_imgs()
 
     def save_clusters_to_file(self, path, labels):
         distinct_labels = np.unique(labels)
