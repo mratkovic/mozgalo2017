@@ -5,7 +5,7 @@ from math import sqrt, log, pow
 
 from scipy.spatial.distance import cdist, pdist, cosine
 from sklearn.utils import check_random_state
-from sklearn.metrics  import silhouette_score, calinski_harabaz_score
+from sklearn.metrics import silhouette_score, calinski_harabaz_score
 
 import numpy as np
 

@@ -36,6 +36,8 @@ def load_image(path):
     if (img is None or len(img) == 0) and path.lower().endswith('gif'):
         img = rgb_to_bgr(skimage.io.imread(path))
 
+
+
     return img
 
 def save_image(path, img):
