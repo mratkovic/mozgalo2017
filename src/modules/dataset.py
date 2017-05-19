@@ -118,12 +118,14 @@ class ImageDataset:
             indices = np.where(labels == label)[0]
             os.makedirs('%s/%d/' % (path, label), exist_ok=True)
             for index in indices:
-                if force_reload:
-                    img = self.get_img(index)
-                else:
-                    img = self.imgs[index]
-                save_image('%s/%d/%s' % (path, label, os.path.basename(self.paths[index])), img)
-
+                try:
+                    if force_reload:
+                        img = self.get_img(index)
+                    else:
+                        img = self.imgs[index]
+                    save_image('%s/%d/%s' % (path, label, os.path.basename(self.paths[index])), img)
+                except:
+                    logging.warning("Index error %s, paths len %s", index, len(self.path))
 
 
 

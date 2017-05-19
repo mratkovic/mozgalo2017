@@ -30,7 +30,7 @@ class InceptionNetV4:
         self.images = tf.placeholder(tf.float32, [None, 229, 229, 3])
 
         with slim.arg_scope(inception_v4.inception_v4_arg_scope()):
-            self.logits, self.end_points = inception_v4(self.images, num_classes=1001, is_training=False)
+            self.logits, self.end_points = inception_v4.inception_v4(self.images, num_classes=1001, is_training=False)
 
         exclude = ['InceptionV4/AuxLogits']
         variables_to_restore = slim.get_variables_to_restore(exclude=exclude)
