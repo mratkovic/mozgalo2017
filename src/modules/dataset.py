@@ -125,7 +125,7 @@ class ImageDataset:
                         img = self.imgs[index]
                     save_image('%s/%d/%s' % (path, label, os.path.basename(self.paths[index])), img)
                 except:
-                    logging.warning("Index error %s, paths len %s", index, len(self.path))
+                    logging.warning("Index error %s, paths len %s", index, len(self.paths))
 
 
 
