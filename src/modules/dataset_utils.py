@@ -4,6 +4,8 @@ from skimage import io
 import os
 import seaborn as sns
 from sklearn.metrics.pairwise import cosine_distances, cosine_similarity
+from skimage.transform import resize
+from matplotlib import offsetbox
 
 from src.modules.utils import *
 
@@ -61,3 +63,27 @@ def plot_closest_results(img_path, get_features_f, dataset, k=12):
 
     fig.tight_layout()
     plt.show()
+    
+def plot_embedding(X, y, images, title=None, figsize=(20,20), img_size=(65 ,65)):
+    x_min, x_max = np.min(X, 0), np.max(X, 0)
+    X = (X - x_min) / (x_max - x_min)     
+    plt.figure(figsize=figsize)
+    ax = plt.subplot(111)
+    colormap = plt.cm.gist_ncar
+    colors = [colormap(i) for i in np.linspace(0, 1,len(set(y)))]
+    for i in range(X.shape[0]):
+        plt.scatter(X[i, 0], X[i, 1], color=colors[y[i]])
+    if hasattr(offsetbox, 'AnnotationBbox'):
+        shown_images = np.array([[1., 1.]])  # just something big
+        for i in range(images.shape[0]):
+            dist = np.sum((X[i] - shown_images) ** 2, 1)
+            if np.min(dist) < 6e-3:
+                ## don't show points that are too close
+                continue
+            shown_images = np.r_[shown_images, [X[i]]]
+            img = resize(images[i], img_size)
+            imagebox = offsetbox.AnnotationBbox(offsetbox.OffsetImage(img, cmap=plt.cm.gray_r), X[i])
+            ax.add_artist(imagebox)
+    plt.xticks([]), plt.yticks([])
+    if title is not None:
+        plt.title(title)
