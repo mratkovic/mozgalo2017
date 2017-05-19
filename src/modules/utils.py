@@ -1,5 +1,7 @@
 import os
 import cv2
+import time
+import logging
 import skimage.io
 from logging.config import fileConfig
 
@@ -11,6 +13,26 @@ def init_logging():
         raise FileNotFoundError("Expected logging_config.ini in src dir")
 
     fileConfig(logging_conf)
+
+class Timer:
+    def __init__(self, title=None, verbose=True, print_f=logging.info):
+        self.verbose = verbose
+        self.title = title
+        self.print_f = print_f
+
+        if self.title is None:
+            self.title = ''
+
+    def __enter__(self):
+        self.start = time.time()
+        return self
+
+    def __exit__(self, *args):
+        self.end = time.time()
+        self.interval = self.end - self.start
+
+        if self.verbose:
+            self.print_f("Duration %s %d s" % (self.title, self.interval))
 
 
 def init_dir(dir_path):
@@ -28,20 +50,17 @@ def rgb_to_bgr(img):
     return cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
 
 
-def load_image(path):
-    """ Util method to load image - solves warinings in skimage and gif problem with
-        cv2
-    """
-    img = cv2.imread(path)
-    if (img is None or len(img) == 0) and path.lower().endswith('gif'):
-        img = rgb_to_bgr(skimage.io.imread(path))
+def load_image(img_path):
+    input_img = skimage.io.imread(img_path)
+    shape = input_img.shape
+    if len(shape) == 2:
+        input_img = skimage.color.gray2rgb(input_img)
 
+    if len(shape) > 2 and shape[2] == 4:
+        input_img = skimage.color.rgba2rgb(input_img)
 
-
-    return img
+    return input_img
 
 def save_image(path, img):
-    if path.lower().endswith('gif'):
-        skimage.io.imsave(path, img)
-    else:
-        cv2.imwrite(path, img)
+    skimage.io.imsave(path, img)
+    #cv2.imwrite(path, img)

@@ -9,6 +9,9 @@ from sklearn.metrics import silhouette_score, calinski_harabaz_score
 
 import numpy as np
 
+
+# Parts of code from sklearn devel branch
+
 def calc_calinski_harabaz(X, cluster_estimator, n_clusters):
     """
     Compute calinski harabaz for clusters made by cluster estimator
